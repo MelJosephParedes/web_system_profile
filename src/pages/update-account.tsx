@@ -1,5 +1,3 @@
-// pages/update-profile.tsx
-
 import React from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -18,34 +16,21 @@ const UpdateProfilePage = () => {
       email: Yup.string().email('Invalid email address').required('Email is required'),
       bio: Yup.string(),
     }),
-    onSubmit: (values) => {
-      // Submit updated profile data to server using Axios
-      axios.put('/api/user', values);
+    onSubmit: async (values) => {
+      try {
+        // Submit updated profile data to server using Axios
+        const response = await axios.put('/api/user', values);
+        console.log('Profile updated successfully:', response.data);
+        // Optionally, you can redirect the user to another page upon successful update
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        // Handle error accordingly
+      }
     },
   });
 
   return (
     <form onSubmit={formik.handleSubmit}>
-      <TextField
-        id="name"
-        name="name"
-        label="Name"
-        value={formik.values.name}
-        onChange={formik.handleChange}
-        onBlur={formik.handleBlur}
-        error={formik.touched.name && Boolean(formik.errors.name)}
-        helperText={formik.touched.name && formik.errors.name}
-      />
-      <TextField
-        id="name"
-        name="name"
-        label="Name"
-        value={formik.values.name}
-        onChange={formik.handleChange}
-        onBlur={formik.handleBlur}
-        error={formik.touched.name && Boolean(formik.errors.name)}
-        helperText={formik.touched.name && formik.errors.name}
-      />
       <TextField
         id="name"
         name="name"

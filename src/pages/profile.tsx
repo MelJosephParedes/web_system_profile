@@ -1,79 +1,70 @@
-import React from 'react';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import useSWR from 'swr';
-import { TextField, Button, CircularProgress } from '@mui/material';
-import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 
-const ProfilePage = () => {
-  const { data: userData, error } = useSWR('/api/user', fetchUserData);
+interface User {
+  name: string;
+  email: string;
+  bio?: string;
+}
 
-  const formik = useFormik({
-    initialValues: {
-      name: userData?.name || '',
-      email: userData?.email || '',
-      bio: userData?.bio || '',
-    },
-    validationSchema: Yup.object({
-      name: Yup.string().required('Name is required'),
-      email: Yup.string().email('Invalid email address').required('Email is required'),
-      bio: Yup.string(),
-    }),
-    onSubmit: async (values) => {
-      // Submit form data to server using Axios
-      axios.put('/api/user', values);
-    },
-  });
+const ProfilePage: React.FC = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
-  if (error) return <div>Error loading user data</div>;
-  if (!userData) return <CircularProgress />;
+  useEffect(() => {
+    const fetchUserData = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          router.push('/login');
+          return;
+        }
+
+        const response = await fetch('/api/profile', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+        } else {
+          console.error('Failed to fetch user data');
+          setError('Failed to fetch user data');
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        setError('An unexpected error occurred. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [router]);
 
   return (
-    <form onSubmit={formik.handleSubmit}>
-      <TextField
-        id="name"
-        name="name"
-        label="Name"
-        value={formik.values.name}
-        onChange={formik.handleChange}
-        onBlur={formik.handleBlur}
-        error={formik.touched.name && Boolean(formik.errors.name)}
-        helperText={formik.touched.name && typeof formik.errors.name === 'string' ? formik.errors.name : ''}
-      />
-      <TextField
-        id="email"
-        name="email"
-        label="Email"
-        value={formik.values.email}
-        onChange={formik.handleChange}
-        onBlur={formik.handleBlur}
-        error={formik.touched.email && Boolean(formik.errors.email)}
-        helperText={formik.touched.email && typeof formik.errors.email === 'string' ? formik.errors.email : ''}
-      />
-      <TextField
-        id="bio"
-        name="bio"
-        label="Bio"
-        value={formik.values.bio}
-        onChange={formik.handleChange}
-        onBlur={formik.handleBlur}
-        error={formik.touched.bio && Boolean(formik.errors.bio)}
-        helperText={formik.touched.bio && typeof formik.errors.bio === 'string' ? formik.errors.bio : ''}
-      />
-      {/* Other fields like email, bio */}
-      <Button type="submit">Save</Button>
-    </form>
+    <div>
+      <h2>Profile</h2>
+      {isLoading ? (
+        <p>Loading user data...</p>
+      ) : error ? (
+        <p style={{ color: 'red' }}>{error}</p>
+      ) : user && (
+        <>
+          <h1><p>Name: {user.name}</p></h1>
+          <p>Email: {user.email}</p>
+          {user.bio && <p>Bio: {user.bio}</p>}
+        </>
+      )}
+    </div>
   );
 };
-
-async function fetchUserData() {
-  try {
-    const response = await axios.get('/api/user');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching user data:', error);
-    throw error; // Rethrow error to let SWR handle it
-  }
-}
 
 export default ProfilePage;

@@ -1,13 +1,11 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import jwt from 'jsonwebtoken';
+import { NextApiRequest, NextApiResponse } from 'next'
 import { dbConnect } from '../../utils/dbConnect';
 import { AccountModel } from '../../models/User';
-import { Document } from 'mongoose'; // Import Document type from mongoose
+import { env } from 'process';
 
-interface Account extends Document {
-  email: string;
-  password: string;
-  // Add other fields as needed
-}
+import dotenv from 'dotenv';
+dotenv.config();
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
@@ -17,19 +15,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { email, password } = req.body;
 
       // Retrieve user from MongoDB based on email
-      const user: Account | null = await AccountModel.findOne({ email });
+      const user = await AccountModel.findOne({ email });
 
       if (!user) {
         return res.status(401).json({ success: false, message: 'User not found' });
       }
 
-      // Check if password matches
+      // Check if password matches (plaintext comparison)
       if (user.password !== password) {
         return res.status(401).json({ success: false, message: 'Invalid password' });
       }
 
-      // If authentication is successful, return user data
-      res.status(200).json({ success: true, user });
+      // Generate JWT token
+      const token = jwt.sign({ email: user.email, userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+      // If authentication is successful, return user data and JWT token
+      res.status(200).json({ success: true, user, token });
     } catch (error) {
       console.error('Error during login:', error);
       res.status(500).json({ success: false, message: 'Internal server error' });

@@ -1,14 +1,17 @@
+// pages/login.tsx
 import React, { useState } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { TextField, Button, Box, Snackbar } from '@mui/material';
 import axios, { AxiosError } from 'axios';
 import { useRouter } from 'next/router';
+import { useAuth } from '../contexts/authContext'; // Adjust the import to match your project structure
 
 const LoginPage = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const router = useRouter();
+  const { login } = useAuth();
 
   const formik = useFormik({
     initialValues: {
@@ -21,22 +24,16 @@ const LoginPage = () => {
     }),
     onSubmit: async (values) => {
       try {
-        const response = await axios.post('/api/login', values);
-        console.log('Login successful:', response.data);
-        // Redirect to profile page upon successful login
-        router.push('/profile');
+        await login(values.email, values.password);
       } catch (error) {
-        const axiosError = error as AxiosError; // Type assertion
+        const axiosError = error as AxiosError;
         if (axiosError.response) {
-          // The request was made and the server responded with a status code
           console.error('Error during login:', axiosError.response.data);
           setSnackbarMessage('Login failed. Please check your credentials.');
         } else if (axiosError.request) {
-          // The request was made but no response was received
           console.error('No response received during login:', axiosError.request);
           setSnackbarMessage('No response received from the server. Please try again later.');
         } else {
-          // Something happened in setting up the request that triggered an Error
           console.error('Error during login setup:', axiosError.message);
           setSnackbarMessage('An error occurred. Please try again later.');
         }
@@ -85,7 +82,6 @@ const LoginPage = () => {
         <Button type="submit">Login</Button>
       </form>
 
-      {/* Snackbar for displaying success or error message */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={6000}
