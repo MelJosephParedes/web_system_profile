@@ -8,7 +8,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const token = req.headers.authorization?.split(' ')[1];
       if (!token) throw new Error('No token provided');
 
-      const decodedToken = jwt.verify(token, process.env.JWT_SECRET) as unknown as JwtPayload & { email: string };
+      // Ensure JWT_SECRET is defined
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        throw new Error('JWT_SECRET is not defined');
+      }
+
+      const decodedToken = jwt.verify(token, jwtSecret) as JwtPayload & { email: string };
       const email = decodedToken.email;
 
       // Fetch user data based on email

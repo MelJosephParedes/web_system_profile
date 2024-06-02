@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { NextApiRequest, NextApiResponse } from 'next'
+import { NextApiRequest, NextApiResponse } from 'next';
 import { dbConnect } from '../../utils/dbConnect';
 import { AccountModel } from '../../models/User';
 import { env } from 'process';
@@ -26,8 +26,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(401).json({ success: false, message: 'Invalid password' });
       }
 
+      // Ensure JWT_SECRET is defined
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        throw new Error('JWT_SECRET is not defined');
+      }
+
       // Generate JWT token
-      const token = jwt.sign({ email: user.email, userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      const token = jwt.sign({ email: user.email, userId: user._id }, jwtSecret, { expiresIn: '1h' });
 
       // If authentication is successful, return user data and JWT token
       res.status(200).json({ success: true, user, token });
